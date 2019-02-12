@@ -89,7 +89,7 @@ module Spree
 
       gettaxes = {
         DocCode: order.number,
-        Discount: order.promo_total.abs.to_s,
+        Discount: order.line_items.sum(:promo_total).abs.to_s,
         Commit: commit,
         DocType: invoice_detail ? invoice_detail : 'SalesOrder',
         Addresses: avatax_address.addresses,
