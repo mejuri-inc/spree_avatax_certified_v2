@@ -87,9 +87,12 @@ module Spree
         end
       end
 
+      # Discount = General order discounts without line items discounts
+      discount = order.adjustments.promotion.eligible.sum(&:amoun).abs
+      discount = discount < 0 ? "0".to_s : discount.to_s
       gettaxes = {
         DocCode: order.number,
-        Discount: order.line_items.sum(:promo_total).abs.to_s,
+        Discount:  discount,
         Commit: commit,
         DocType: invoice_detail ? invoice_detail : 'SalesOrder',
         Addresses: avatax_address.addresses,
