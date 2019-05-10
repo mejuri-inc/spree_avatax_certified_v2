@@ -76,7 +76,7 @@ class TaxSvc
   end
 
   def credential
-    'Basic ' + Base64.encode64(account_number + ':' + license_key)
+    'Basic ' + Base64.encode64(account_number.to_s + ':' + license_key)
   end
 
   def service_url
