@@ -108,7 +108,7 @@ module SpreeAvataxCertified
     def return_item_line(line_item, quantity, amount)
       @logger.info("build return_line_item line: #{line_item.name}")
 
-      stock_location = get_stock_location(@stock_locations, line_item)
+      stock_location = line_item.stock_location
 
       line = {
         :LineNo => "#{line_item.id}-LI",
