@@ -59,9 +59,18 @@ module SpreeAvataxCertified
       end
     end
 
+    def stock_location_ids_from_order order
+      if order.shipments.present?
+        order.shipments.map { |shipment| shipment.stock_location_id } 
+      else
+        Spree::Stock::Coordinator.new(order).packages.map(&:to_shipment).map(&:stock_location_id)
+      end
+    end
+
     def origin_ship_addresses
       stock_addresses = []
-      stock_location_ids = Spree::Stock::Coordinator.new(order).packages.map(&:to_shipment).map(&:stock_location_id)
+       
+      stock_location_ids = stock_location_ids_from_order(order)
 
       Spree::StockLocation.where(id: stock_location_ids).each do |stock_location|
 
