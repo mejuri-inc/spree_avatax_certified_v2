@@ -88,7 +88,7 @@ module Spree
       end
 
       # Discount = General order discounts without line items discounts
-      discount = order.adjustments.promotion.eligible.sum(&:amount).abs
+      discount = order.adjustments.promotion.eligible.sum(:amount).abs
       discount = discount < 0 ? "0".to_s : discount.to_s
       gettaxes = {
         DocCode: order.number,
@@ -110,6 +110,7 @@ module Spree
       return { TotalTax: '0.00' } if tax_result == 'error in Tax'
       return tax_result if tax_result['ResultCode'] == 'Success'
     end
+
     def post_return_to_avalara(commit = false, invoice_detail = nil, return_auth = nil)
       AVALARA_TRANSACTION_LOGGER.info('starting post return order to avalara')
 
