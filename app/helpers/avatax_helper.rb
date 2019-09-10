@@ -1,4 +1,11 @@
 module AvataxHelper
+  def stock_location_ids_from_order(order)
+    if order.shipments.present?
+      order.shipments.map(&:stock_location_id)
+    else
+      Spree::Stock::Coordinator.new(order).packages.map(&:to_shipment).map(&:stock_location_id)
+    end
+  end
   class AvataxLog
     def initialize(path_name, file_name, log_info = nil, schedule = nil)
       if !(Spree::Config.avatax_log_to_stdout)

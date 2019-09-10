@@ -6,7 +6,7 @@ require 'logger'
 
 module SpreeAvataxCertified
   class Address
-
+    include AvataxHelper
     attr_reader :order, :addresses
 
     def initialize(order)
@@ -61,8 +61,8 @@ module SpreeAvataxCertified
 
     def origin_ship_addresses
       stock_addresses = []
-      stock_location_ids = Spree::Stock::Coordinator.new(order).packages.map(&:to_shipment).map(&:stock_location_id)
-
+      stock_location_ids = stock_location_ids_from_order(order)
+      
       Spree::StockLocation.where(id: stock_location_ids).each do |stock_location|
 
         stock_location_address = {
