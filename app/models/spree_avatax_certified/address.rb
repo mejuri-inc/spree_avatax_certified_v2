@@ -43,14 +43,16 @@ module SpreeAvataxCertified
     def order_ship_address
       unless order.ship_address.nil?
 
+        order_ship_address = order.pos? ? order.purchase_location.stock_location : order.ship_address
+        
         shipping_address = {
           :AddressCode => 'Dest',
-          :Line1 => order.ship_address.address1,
-          :Line2 => order.ship_address.address2,
-          :City => order.ship_address.city,
-          :Region => order.ship_address.state_name,
-          :Country => Spree::Country.find(order.ship_address.country_id).iso,
-          :PostalCode => order.ship_address.zipcode
+          :Line1 => order_ship_address.address1,
+          :Line2 => order_ship_address.address2,
+          :City => order_ship_address.city,
+          :Region => order_ship_address.state_name,
+          :Country => order_ship_address.country.iso,
+          :PostalCode => order_ship_address.zipcode
         }
 
         @logger.debug shipping_address
