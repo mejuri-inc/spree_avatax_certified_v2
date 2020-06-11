@@ -6,7 +6,7 @@ require 'logger'
 
 module SpreeAvataxCertified
   class Address
-
+    include AvataxHelper
     attr_reader :order, :addresses
 
     def initialize(order)
@@ -43,14 +43,16 @@ module SpreeAvataxCertified
     def order_ship_address
       unless order.ship_address.nil?
 
+        order_ship_address = order.pos? ? order.purchase_location.stock_location : order.ship_address
+        
         shipping_address = {
           :AddressCode => 'Dest',
-          :Line1 => order.ship_address.address1,
-          :Line2 => order.ship_address.address2,
-          :City => order.ship_address.city,
-          :Region => order.ship_address.state_name,
-          :Country => Spree::Country.find(order.ship_address.country_id).iso,
-          :PostalCode => order.ship_address.zipcode
+          :Line1 => order_ship_address.address1,
+          :Line2 => order_ship_address.address2,
+          :City => order_ship_address.city,
+          :Region => order_ship_address.state_name,
+          :Country => order_ship_address.country.iso,
+          :PostalCode => order_ship_address.zipcode
         }
 
         @logger.debug shipping_address
@@ -61,8 +63,8 @@ module SpreeAvataxCertified
 
     def origin_ship_addresses
       stock_addresses = []
-      stock_location_ids = Spree::Stock::Coordinator.new(order).packages.map(&:to_shipment).map(&:stock_location_id)
-
+      stock_location_ids = stock_location_ids_from_order(order)
+      
       Spree::StockLocation.where(id: stock_location_ids).each do |stock_location|
 
         stock_location_address = {

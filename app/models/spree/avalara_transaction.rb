@@ -88,7 +88,7 @@ module Spree
       end
 
       # Discount = General order discounts without line items discounts
-      discount = order.adjustments.promotion.eligible.sum(&:amount).abs
+      discount = order.adjustments.promotion.eligible.sum(:amount).abs
       discount = discount < 0 ? "0".to_s : discount.to_s
       gettaxes = {
         DocCode: order.number,
