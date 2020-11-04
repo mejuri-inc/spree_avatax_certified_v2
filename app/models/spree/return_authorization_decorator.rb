@@ -5,9 +5,6 @@ Spree::ReturnAuthorization.class_eval do
   RETURN_AUTHORIZATION_LOGGER.info('start ReturnAuthorization processing')
 
   has_one :avalara_transaction
-  self.state_machine.before_transition :to => :received,
-                                       :do => :avalara_capture_finalize,
-                                       :if => :avalara_eligible?
 
   def avalara_eligible?
     Spree::Config.avatax_iseligible && order_has_avalara_transaction?
