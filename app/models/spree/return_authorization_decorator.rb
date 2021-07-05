@@ -5,6 +5,9 @@ Spree::ReturnAuthorization.class_eval do
   RETURN_AUTHORIZATION_LOGGER.info('start ReturnAuthorization processing')
 
   has_one :avalara_transaction
+  state_machine.before_transition to: :received,
+                                  do: :avalara_capture_finalize,
+                                  if: :avalara_eligible?
 
   def avalara_eligible?
     Spree::Config.avatax_iseligible && order_has_avalara_transaction?
@@ -36,8 +39,6 @@ Spree::ReturnAuthorization.class_eval do
 
       RETURN_AUTHORIZATION_LOGGER.info_and_debug('tax amount', @rtn_tax)
 
-      self.amount = @rtn_tax['TotalAmount'].to_f.abs + @rtn_tax['TotalTax'].to_f.abs unless @rtn_tax[:TotalTax] == '0.00'
-      self.save
       @rtn_tax
     rescue => e
       RETURN_AUTHORIZATION_LOGGER.debug e
