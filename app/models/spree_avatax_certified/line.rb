@@ -117,11 +117,20 @@ module SpreeAvataxCertified
         :TaxCode => line_item.tax_category.try(:description) || 'P0000000',
         :ItemCode => line_item.variant.sku,
         :Qty => quantity,
-        :Amount => -amount + return_line_item_taxes(line_item, quantity),
+        :Amount => -amount.to_f,
         :OriginCode => stock_location,
         :DestinationCode => 'Dest',
-        :CustomerUsageType => order.user ? order.user.avalara_entity_use_code.try(:use_code) : ''
+        :CustomerUsageType => order.user ? order.user.avalara_entity_use_code.try(:use_code) : '',
+        TaxIncluded: true
       }
+
+      tax_override = {
+        TaxOverrideType: 'TaxAmount',
+        Reason: 'Return',
+        TaxAmount: -return_line_item_taxes(line_item, quantity)
+      }
+
+      line[:TaxOverride] = tax_override
 
       @logger.debug line
 
@@ -161,7 +170,7 @@ module SpreeAvataxCertified
 
     def return_line_item_taxes(line_item, quantity)
       total_tax_amount = line_item.additional_tax_total + line_item.included_tax_total
-      total_tax_amount * (quantity.to_f / line_item.quantity)
+      (total_tax_amount * (quantity.to_f / line_item.quantity)).to_f
     end
   end
 end
