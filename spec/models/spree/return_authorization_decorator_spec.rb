@@ -59,5 +59,15 @@ describe Spree::ReturnAuthorization, type: :model do
       return_authorization.receive!
       expect(return_authorization.state).to eq("received")
     end
+
+    it 'should receive avalara_capture_finalize' do
+      expect(return_authorization).to receive(:avalara_capture_finalize)
+      return_authorization.receive!
+    end
+
+    it 'avalara_transaction should receive commit_avatax_final when return auth is received' do
+      expect(return_authorization.order.avalara_transaction).to receive(:commit_avatax_final)
+      return_authorization.receive!
+    end
   end
 end
