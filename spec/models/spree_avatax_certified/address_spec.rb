@@ -54,6 +54,19 @@ describe SpreeAvataxCertified::Address, :type => :model do
     it 'has the origin address return a hash' do
       expect(address_lines.order_ship_address[0]).to be_kind_of(Hash)
     end
+
+    if 'has attributes that matches' do
+      order_ship_address = order.ship_address
+      ship_address = address_lines.order_ship_address[0]
+
+      expect(ship_address['AddressCode']).to eq('Dest')
+      expect(ship_address['Line1']).to eq(order_ship_address.address1)
+      expect(ship_address['Line2']).to eq(order_ship_address.address2)
+      expect(ship_address['City']).to eq(order_ship_address.city)
+      expect(ship_address['Region']).to eq(order_ship_address.state.name)
+      expect(ship_address['Country']).to eq(order_ship_address.country.iso)
+      expect(ship_address['PostalCode']).to eq(order_ship_address.zipcode)
+    end
   end
 
   describe "#validate" do
