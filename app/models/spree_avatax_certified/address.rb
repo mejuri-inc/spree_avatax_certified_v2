@@ -50,7 +50,7 @@ module SpreeAvataxCertified
           :Line1 => order_ship_address.address1,
           :Line2 => order_ship_address.address2,
           :City => order_ship_address.city,
-          :Region => order_ship_address.state_name || order_ship_address.state&.name,
+          :Region => order_ship_address.state_name.presence || order_ship_address.state&.name,
           :Country => order_ship_address.country.iso,
           :PostalCode => order_ship_address.zipcode
         }
