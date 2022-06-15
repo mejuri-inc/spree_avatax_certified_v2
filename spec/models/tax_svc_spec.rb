@@ -12,12 +12,32 @@ describe TaxSvc, :type => :model do
     end
 
     context 'fails' do
+      before do
+        allow(Slack_client)
+          .to receive(:chat_postMessage)
+          .and_return(ok: true)
+      end
+
       it 'fails when no params are given' do
         expect(taxsvc.get_tax({})).to eq('error in Tax')
       end
 
       it 'fails when no lines are given' do
         expect(taxsvc.get_tax({:CustomerCode=>"1",:DocDate=>"2014-11-03",:CompanyCode=>"54321",:CustomerUsageType=>"",:ExemptionNo=>nil,:Client=>"SpreeExtV1.0",:DocCode=>"R731071205",:ReferenceCode=>"R731071205",:DetailLevel=>"Tax",:Commit=>false,:DocType=>"SalesOrder",:Addresses=>[{:AddressCode=>9,:Line1=>"31 South St",:City=>"Morristown",:PostalCode=>"07960",:Country=>"US"},{:AddressCode=>"Dest",:Line1=>"73 Glenmere Drive",:Line2=>"",:City=>"Chatham",:Region=>"NJ",:Country=>"US",:PostalCode=>"07928"},{:AddressCode=>"Orig",:Line1=>"73 Glenmere Drive",:City=>"Chatham",:PostalCode=>"07928",:Country=>"United States"}]})).to eq('error in Tax')
+      end
+
+      it 'notifies to slack when an read timeout occurs' do
+        allow_any_instance_of(RestClient::Request)
+          .to receive(:execute)
+          .and_raise(RestClient::Exceptions::ReadTimeout)
+        expect(taxsvc.get_tax({ DocCode: 'test' })).to eq('error in Tax')
+      end
+
+      it 'notifies to slack when an open timeout occurs' do
+        allow_any_instance_of(RestClient::Request)
+          .to receive(:execute)
+          .and_raise(RestClient::Exceptions::OpenTimeout)
+        expect(taxsvc.get_tax({ DocCode: 'test' })).to eq('error in Tax')
       end
     end
   end

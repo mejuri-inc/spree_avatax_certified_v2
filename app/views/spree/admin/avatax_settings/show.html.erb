@@ -28,6 +28,14 @@
     <td><%= AVATAX_SERVICEPATH_ADDRESS %></td>
   </tr>
   <tr>
+    <th scope="row"><%= t("avatax_read_timeout") %>:</th>
+    <td><%= Spree::Config.avatax_read_timeout %></td>
+  </tr>
+  <tr>
+    <th scope="row"><%= t("avatax_open_timeout") %>:</th>
+    <td><%= Spree::Config.avatax_open_timeout %></td>
+  </tr>
+  <tr>
     <th scope="row"><%= t("enable_avatax") %>:</th>
     <td><%= Spree::Config.avatax_iseligible %></td>
   </tr>

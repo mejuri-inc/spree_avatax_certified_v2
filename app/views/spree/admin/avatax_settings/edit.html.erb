@@ -41,6 +41,14 @@
         <label><%= t('avatax_client_version') %></label><br />
         <input type="text" placeholder="<%= AVATAX_CLIENT_VERSION %>", readonly>
       </p>
+      <p>
+        <label><%= t('avatax_read_timeout') %></label><br />
+        <%= number_field_tag('settings[avatax_read_timeout]', Spree::Config.avatax_read_timeout, :maxlength => 256, :class => 'avatax') %>
+      </p>
+      <p>
+        <label><%= t('avatax_open_timeout') %></label><br />
+        <%= number_field_tag('settings[avatax_open_timeout]', Spree::Config.avatax_open_timeout, :maxlength => 256, :class => 'avatax') %>
+      </p>
     </fieldset>
 
     <fieldset>

@@ -6,23 +6,33 @@ require 'rest-client'
 require 'logging'
 
 class TaxSvc
+  READ_TIMEOUT_ERROR = RestClient::Exceptions::ReadTimeout
+  OPEN_TIMEOUT_ERROR = RestClient::Exceptions::OpenTimeout
+
   def get_tax(request_hash)
     log(__method__, request_hash)
     RestClient.log = logger.logger
+    order_number = request_hash[:DocCode]
     res = response('get', request_hash)
     logger.info 'RestClient call'
     logger.debug res
     response = JSON.parse(res.body)
 
     if response['ResultCode'] != 'Success'
-      logger.info_and_debug("Avatax Error: Order ##{request_hash[:DocCode]}", response)
+      logger.info_and_debug("Avatax Error: Order ##{order_number}", response)
       raise 'error in Tax'
     else
       response
     end
-  rescue => e
-    logger.info 'Rest Client Error'
-    logger.debug e, 'error in Tax'
+  rescue StandardError => e
+    # UDL-946 - Notify a failure to calculate taxes for an order
+    if [READ_TIMEOUT_ERROR, OPEN_TIMEOUT_ERROR].any? { |klass| e.instance_of?(klass) }
+      message = "[#{Rails.env}] Total Tax 0.0 calculated for Order: #{order_number}. Error: #{e}."
+      Slack_client.chat_postMessage(channel: 'mejuri-web-stripe-v3-alerts', text: message)
+    end
+    msg = "Rest Client Error for Order ##{order_number}. Error: #{e.class}"
+    logger.info msg
+    logger.debug e, msg
     'error in Tax'
   end
 
@@ -93,16 +103,24 @@ class TaxSvc
 
   def response(uri, request_hash)
     RestClient::Request.execute(method: :post,
-                                timeout: 5,
+                                timeout: service_timeout,
+                                open_timeout: service_open_timeout,
                                 url: service_url + uri,
-                                payload:  JSON.generate(request_hash),
+                                payload: JSON.generate(request_hash),
                                 headers: {
                                   authorization: credential,
                                   content_type: 'application/json'
-                                }
-    )  do |response, request, result|
+                                }) do |response, _request, _result|
       response
     end
+  end
+
+  def service_timeout
+    Spree::Config.avatax_read_timeout.presence&.to_f || 10
+  end
+
+  def service_open_timeout
+    Spree::Config.avatax_open_timeout.presence&.to_f || 5
   end
 
   def log(method, request_hash = nil)
