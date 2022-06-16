@@ -31,7 +31,7 @@ class TaxSvc
       Slack_client.chat_postMessage(channel: 'mejuri-web-avalara-errors', text: message)
     end
     msg = "Rest Client Error for Order ##{order_number}. Error: #{e}"
-    logger.error msg
+    logger.info msg
     'error in Tax'
   end
 
