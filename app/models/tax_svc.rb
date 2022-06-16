@@ -28,11 +28,10 @@ class TaxSvc
     # UDL-946 - Notify a failure to calculate taxes for an order
     if [READ_TIMEOUT_ERROR, OPEN_TIMEOUT_ERROR].any? { |klass| e.instance_of?(klass) }
       message = "[#{Rails.env}] Total Tax 0.0 calculated for Order: #{order_number}. Error: #{e}."
-      Slack_client.chat_postMessage(channel: 'mejuri-web-stripe-v3-alerts', text: message)
+      Slack_client.chat_postMessage(channel: 'mejuri-web-avalara-errors', text: message)
     end
-    msg = "Rest Client Error for Order ##{order_number}. Error: #{e.class}"
-    logger.info msg
-    logger.debug e, msg
+    msg = "Rest Client Error for Order ##{order_number}. Error: #{e}"
+    logger.error msg
     'error in Tax'
   end
 

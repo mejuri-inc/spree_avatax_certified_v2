@@ -31,6 +31,7 @@ describe TaxSvc, :type => :model do
           .to receive(:execute)
           .and_raise(RestClient::Exceptions::ReadTimeout)
         expect(taxsvc.get_tax({ DocCode: 'test' })).to eq('error in Tax')
+        expect(Slack_client).to receive(:chat_postMessage)
       end
 
       it 'notifies to slack when an open timeout occurs' do
@@ -38,6 +39,7 @@ describe TaxSvc, :type => :model do
           .to receive(:execute)
           .and_raise(RestClient::Exceptions::OpenTimeout)
         expect(taxsvc.get_tax({ DocCode: 'test' })).to eq('error in Tax')
+        expect(Slack_client).to receive(:chat_postMessage)
       end
     end
   end
