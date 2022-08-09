@@ -62,14 +62,21 @@ describe Spree::Payment, :type => :model do
     before do
       order.update_attributes(additional_tax_total: 1.to_f)
     end
-    it 'should update the amount to be the order total' do
-      initial_amount = payment.amount
-      payment.avalara_finalize
-      expect(payment.amount).not_to eq(initial_amount)
-    end
+
     it 'should receive avalara_capture_finalize on order' do
       expect(payment.order).to receive(:avalara_capture_finalize)
       payment.avalara_finalize
+    end
+
+    context 'when is not avalara eligible' do
+      before do
+        Spree::Config.avatax_iseligible = false
+      end
+
+      it 'should not receive avalara_capture_finalize' do
+        expect(payment.order).not_to receive(:avalara_capture_finalize)
+        payment.avalara_finalize
+      end
     end
   end
 
