@@ -5,11 +5,22 @@ require 'base64'
 require 'rest-client'
 require 'logging'
 
-class TaxSvc
+module Spree
+  class AddressValidationError < StandardError; end
+end
+
+class TaxSvc # rubocop:disable Metrics/ClassLength
   READ_TIMEOUT_ERROR = RestClient::Exceptions::ReadTimeout
   OPEN_TIMEOUT_ERROR = RestClient::Exceptions::OpenTimeout
 
-  def get_tax(request_hash)
+  ADDRESS_ERRORS = ['Invalid or missing state/province',
+                    'Zip is not valid for the state',
+                    'Invalid ZIP/Postal Code',
+                    'Address cannot be geocoded',
+                    'Address not geocoded',
+                    'The address is not deliverable.'].freeze
+
+  def get_tax(request_hash) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
     log(__method__, request_hash)
     RestClient.log = logger.logger
     order_number = request_hash[:DocCode]
@@ -20,10 +31,19 @@ class TaxSvc
 
     if response['ResultCode'] != 'Success'
       logger.info_and_debug("Avatax Error: Order ##{order_number}", response)
-      raise 'error in Tax'
+
+      raise 'error in Tax' unless Spree::Config.avatax_address_validation
+      raise 'error in Tax' unless response['Messages'].any? do |message|
+        ADDRESS_ERRORS.any? { |error| message['Summary'].include? error }
+      end
+
+      raise Spree::AddressValidationError.new('Address Validation Failed.')
     else
       response
     end
+  rescue Spree::AddressValidationError => e
+    Raven.capture_exception(e)
+    raise e
   rescue StandardError => e
     # UDL-946 - Notify a failure to calculate taxes for an order
     if [READ_TIMEOUT_ERROR, OPEN_TIMEOUT_ERROR].any? { |klass| e.instance_of?(klass) }
