@@ -32,7 +32,7 @@ class TaxSvc # rubocop:disable Metrics/ClassLength
     if response['ResultCode'] != 'Success'
       logger.info_and_debug("Avatax Error: Order ##{order_number}", response)
 
-      raise 'error in Tax' unless Spree::Config.avatax_address_validation
+      raise 'error in Tax' unless Spree::Config.avatax_refuse_checkout_address_validation_error
       raise 'error in Tax' unless response['Messages'].any? do |message|
         ADDRESS_ERRORS.any? { |error| message['Summary'].include? error }
       end

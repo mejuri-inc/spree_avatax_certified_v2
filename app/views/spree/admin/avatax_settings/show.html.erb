@@ -48,6 +48,10 @@
     <td><%= Spree::Config.avatax_address_validation %></td>
   </tr>
   <tr>
+    <th scope="row">Refuse Checkout if Address Validation Fails:</th>
+    <td><%= Spree::Config.avatax_refuse_checkout_address_validation_error %></td>
+  </tr>
+  <tr>
     <th scope="row"><%= t("avatax_address_validation_enabled_countries") %>:</th>
     <% address_validated_countries = Spree::Config.avatax_address_validation_enabled_countries %>
     <td>

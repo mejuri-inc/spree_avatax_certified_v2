@@ -67,6 +67,7 @@ module Spree
           Spree::Config.avatax_company_code =taxpref[:avatax_company_code]
           Spree::Config.avatax_read_timeout =taxpref[:avatax_read_timeout]
           Spree::Config.avatax_open_timeout =taxpref[:avatax_open_timeout]
+          Spree::Config.avatax_refuse_checkout_address_validation_error = taxpref[:avatax_refuse_checkout_address_validation_error] || false
 
           respond_to do |format|
             format.html {
