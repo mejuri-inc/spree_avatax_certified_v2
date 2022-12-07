@@ -88,6 +88,13 @@
       </p>
     </fieldset>
     <fieldset>
+      <legend><%= t('avatax_refuse_checkout_address_validation_error') %></legend>
+      <p>
+        <label><%= t('enable_avatax_refuse_checkout_address_validation_error') %></label><br />
+        <%= check_box_tag('settings[avatax_refuse_checkout_address_validation_error]', true, Spree::Config.avatax_refuse_checkout_address_validation_error, class: 'avatax') %>
+      </p>
+    </fieldset>
+    <fieldset>
       <legend><%= t('avatax_tax_calculation') %></legend>
       <p>
         <label><%= t('enable_avatax_tax_calculation') %></label><br />
