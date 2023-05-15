@@ -97,4 +97,17 @@ describe Spree::Order, type: :model do
       expect(order.avatax_cache_key).to eq(expected_response)
     end
   end
+
+  describe '#save_line_tax_breakdown' do
+
+    let(:tax_lines) {[{
+        "LineNo"=>"#{completed_order.line_items.first.id}-LI",
+        "TaxDetails"=>
+      [{"Taxable"=>"25", "Rate"=>"0.050000", "Tax"=>"1.25", "Region"=>"CA", "Country"=>"CA", "JurisType"=>"Country", "JurisName"=>"CANADA", "JurisCode"=>"CA", "TaxName"=>"CANADA GST/TPS"},
+        {"Taxable"=>"25", "Rate"=>"0.080000", "Tax"=>"2", "Region"=>"ON", "Country"=>"CA", "JurisType"=>"State", "JurisName"=>"ONTARIO", "JurisCode"=>"ON", "TaxName"=>"ONTARIO HST"}]}]}
+    it 'should save line item tax breakdown' do
+      completed_order.save_line_tax_breakdown tax_lines
+      expect(completed_order.adjustments.tax.first.meta[:tax_breakdown]).not_to be_nil
+    end
+  end
 end

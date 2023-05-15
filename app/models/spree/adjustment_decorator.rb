@@ -7,4 +7,11 @@ Spree::Adjustment.class_eval do
     key << self.amount
     key.join('-')
   end
+
+  def tax_breakdown
+    meta[:tax_breakdown] unless meta[:tax_breakdown].nil?
+    taxes = order.avalara_capture
+    order.save_line_tax_breakdown taxes['TaxLines']
+    meta[:tax_breakdown]
+  end
 end
