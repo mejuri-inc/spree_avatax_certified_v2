@@ -60,7 +60,7 @@ describe Spree::ReturnAuthorization, type: :model do
       expect(return_authorization.state).to eq("received")
     end
 
-    it "should receive avalara_capture_finalize" do
+    it 'should receive avalara_capture_finalize' do
       expect(return_authorization).to receive(:avalara_capture_finalize)
       return_authorization.receive!
     end

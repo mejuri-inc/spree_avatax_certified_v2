@@ -26,6 +26,9 @@ module SpreeAvataxCertified
         preference :avatax_document_commit, :boolean, default: true
         preference :avatax_origin, :string, default: "{}"
         preference :avatax_log_to_stdout, :boolean, default: false
+        preference :avatax_read_timeout, :integer, default: 10
+        preference :avatax_open_timeout, :integer, default: 5
+        preference :avatax_refuse_checkout_address_validation_error, :boolean, default: false
       end
     end
 

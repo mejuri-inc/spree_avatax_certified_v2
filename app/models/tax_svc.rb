@@ -5,24 +5,53 @@ require 'base64'
 require 'rest-client'
 require 'logging'
 
-class TaxSvc
-  def get_tax(request_hash)
+module Spree
+  class AddressValidationError < StandardError; end
+end
+
+class TaxSvc # rubocop:disable Metrics/ClassLength
+  READ_TIMEOUT_ERROR = RestClient::Exceptions::ReadTimeout
+  OPEN_TIMEOUT_ERROR = RestClient::Exceptions::OpenTimeout
+
+  ADDRESS_ERRORS = ['Invalid or missing state/province',
+                    'Zip is not valid for the state',
+                    'Invalid ZIP/Postal Code',
+                    'Address cannot be geocoded',
+                    'Address not geocoded',
+                    'The address is not deliverable.'].freeze
+
+  def get_tax(request_hash) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
     log(__method__, request_hash)
     RestClient.log = logger.logger
+    order_number = request_hash[:DocCode]
     res = response('get', request_hash)
     logger.info 'RestClient call'
     logger.debug res
     response = JSON.parse(res.body)
 
     if response['ResultCode'] != 'Success'
-      logger.info_and_debug("Avatax Error: Order ##{request_hash[:DocCode]}", response)
-      raise 'error in Tax'
+      logger.info_and_debug("Avatax Error: Order ##{order_number}", response)
+
+      raise 'error in Tax' unless Spree::Config.avatax_refuse_checkout_address_validation_error
+      raise 'error in Tax' unless response['Messages'].any? do |message|
+        ADDRESS_ERRORS.any? { |error| message['Summary'].include? error }
+      end
+
+      raise Spree::AddressValidationError.new('Address Validation Failed.')
     else
       response
     end
-  rescue => e
-    logger.info 'Rest Client Error'
-    logger.debug e, 'error in Tax'
+  rescue Spree::AddressValidationError => e
+    Raven.capture_exception(e)
+    raise e
+  rescue StandardError => e
+    # UDL-946 - Notify a failure to calculate taxes for an order
+    if [READ_TIMEOUT_ERROR, OPEN_TIMEOUT_ERROR].any? { |klass| e.instance_of?(klass) }
+      message = "[#{Rails.env}] Total Tax 0.0 calculated for Order: #{order_number}. Error: #{e}."
+      Slack_client.chat_postMessage(channel: 'mejuri-web-avalara-errors', text: message)
+    end
+    msg = "Rest Client Error for Order ##{order_number}. Error: #{e}"
+    logger.info msg
     'error in Tax'
   end
 
@@ -93,16 +122,24 @@ class TaxSvc
 
   def response(uri, request_hash)
     RestClient::Request.execute(method: :post,
-                                timeout: 5,
+                                timeout: service_timeout,
+                                open_timeout: service_open_timeout,
                                 url: service_url + uri,
-                                payload:  JSON.generate(request_hash),
+                                payload: JSON.generate(request_hash),
                                 headers: {
                                   authorization: credential,
                                   content_type: 'application/json'
-                                }
-    )  do |response, request, result|
+                                }) do |response, _request, _result|
       response
     end
+  end
+
+  def service_timeout
+    Spree::Config.avatax_read_timeout.presence&.to_f || 10
+  end
+
+  def service_open_timeout
+    Spree::Config.avatax_open_timeout.presence&.to_f || 5
   end
 
   def log(method, request_hash = nil)
