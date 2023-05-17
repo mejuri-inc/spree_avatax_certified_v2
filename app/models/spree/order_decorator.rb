@@ -48,8 +48,11 @@ Spree::Order.class_eval do
     tax_lines.each do |tax_line|
       line_item = Spree::LineItem.find(tax_line['LineNo'].sub('-LI', ''))
       next if line_item.nil?
-      line_item.adjustments.tax.first.meta[:tax_breakdown] = tax_line['TaxDetails']
-      line_item.save
+      tax = line_item.adjustments.tax.first
+      return if tax.nil?
+
+      tax.meta[:tax_breakdown] = tax_line['TaxDetails']
+      tax.save
     end
   end
 
