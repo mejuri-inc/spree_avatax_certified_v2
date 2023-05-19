@@ -9,7 +9,7 @@ Spree::Adjustment.class_eval do
   end
 
   def tax_breakdown
-    meta[:tax_breakdown] unless meta[:tax_breakdown].nil?
+    return meta[:tax_breakdown] unless meta[:tax_breakdown].nil?
     taxes = order.avalara_capture
     order.save_line_tax_breakdown taxes['TaxLines']
     meta[:tax_breakdown]
