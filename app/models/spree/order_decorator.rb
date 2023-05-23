@@ -33,7 +33,7 @@ Spree::Order.class_eval do
     create_avalara_transaction if avalara_transaction.nil?
     line_items.reload
     @rtn_tax = avalara_transaction.commit_avatax_final('SalesInvoice')
-
+    save_line_tax_breakdown @rtn_tax['TaxLines'] unless @rtn_tax['TaxLines'].nil?
     logger.info_and_debug('tax amount', @rtn_tax)
     @rtn_tax
   end
@@ -42,6 +42,18 @@ Spree::Order.class_eval do
     key = ['Spree::Order']
     key << self.number
     key.join('-')
+  end
+
+  def save_line_tax_breakdown tax_lines
+    tax_lines.each do |tax_line|
+      line_item = Spree::LineItem.find(tax_line['LineNo'].sub('-LI', ''))
+      next if line_item.nil?
+      tax = line_item.adjustments.tax.first
+      return if tax.nil?
+
+      tax.meta[:tax_breakdown] = tax_line['TaxDetails']
+      tax.save
+    end
   end
 
   private
