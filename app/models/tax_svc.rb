@@ -23,13 +23,12 @@ class TaxSvc # rubocop:disable Metrics/ClassLength
   def get_tax(request_hash) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
     log(__method__, request_hash)
     RestClient.log = logger.logger
-    order_number = request_hash[:DocCode]
-    res = response('get', request_hash)
+    order_number = request_hash[:createTransactionModel][:code]
+    res = response('/transactions/createoradjust', request_hash)
     logger.info 'RestClient call'
     logger.debug res
     response = JSON.parse(res.body)
-
-    if response['ResultCode'] != 'Success'
+    if response['code'].blank? || response['code'] != order_number
       logger.info_and_debug("Avatax Error: Order ##{order_number}", response)
 
       raise 'error in Tax' unless Spree::Config.avatax_refuse_checkout_address_validation_error
@@ -58,7 +57,7 @@ class TaxSvc # rubocop:disable Metrics/ClassLength
   def cancel_tax(request_hash)
     if tax_calculation_enabled?
       log(__method__, request_hash)
-      res = response('cancel', request_hash)
+      res = response_v1('cancel', request_hash)
       logger.debug res
       JSON.parse(res.body)['CancelTaxResult']
     end
@@ -112,6 +111,10 @@ class TaxSvc # rubocop:disable Metrics/ClassLength
     Spree::Config.avatax_endpoint + AVATAX_SERVICEPATH_TAX
   end
 
+  def service_url_v1
+    Spree::Config.avatax_endpoint + AVATAX_V1_SERVICEPATH_TAX
+  end
+
   def license_key
     Spree::Config.avatax_license_key
   end
@@ -121,6 +124,20 @@ class TaxSvc # rubocop:disable Metrics/ClassLength
   end
 
   def response(uri, request_hash)
+    RestClient::Request.execute(method: :post,
+                                timeout: service_timeout,
+                                open_timeout: service_open_timeout,
+                                url: service_url + uri,
+                                payload: JSON.generate(request_hash),
+                                headers: {
+                                  authorization: credential,
+                                  content_type: 'application/json'
+                                }) do |response, _request, _result|
+      response
+    end
+  end
+
+  def response_v1(uri, request_hash)
     RestClient::Request.execute(method: :post,
                                 timeout: service_timeout,
                                 open_timeout: service_open_timeout,

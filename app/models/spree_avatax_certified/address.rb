@@ -7,81 +7,58 @@ require 'logger'
 module SpreeAvataxCertified
   class Address
     include AvataxHelper
-    attr_reader :order, :addresses
+    attr_reader :order, :address
 
-    def initialize(order)
+    def initialize(order = nil,line = nil, bill_address)
       @order = order
-      @addresses = []
+      @line = line
+      @address = {
+        :billTo => bill_address
+      }
       @logger ||= AvataxHelper::AvataxLog.new('avalara_order_addresses', 'SpreeAvataxCertified::Address', 'building addresses')
       build_addresses
     end
 
     def build_addresses
-      origin_address
-      order_ship_address
-      origin_ship_addresses
+      @address[:shipTo] = ship_to_address
+      @address[:shipFrom] = ship_from_address
     end
 
-    def origin_address
-      origin = JSON.parse(Spree::Config.avatax_origin)
-
-      orig_address = {
-        :AddressCode => 'Orig',
-        :Line1 => origin['Address1'],
-        :Line2 => origin['Address2'],
-        :City => origin['City'],
-        :Region => origin['Region'],
-        :PostalCode => origin['Zip5'],
-        :Country => origin['Country']
-      }
-
-      @logger.debug orig_address
-
-      addresses << orig_address
-    end
-
-    def order_ship_address
+    def ship_to_address
       unless order.ship_address.nil?
 
         order_ship_address = order.pos? ? order.purchase_location.stock_location : order.ship_address
 
         shipping_address = {
-          :AddressCode => 'Dest',
-          :Line1 => order_ship_address.address1,
-          :Line2 => order_ship_address.address2,
-          :City => order_ship_address.city,
-          :Region => order_ship_address.state_name.presence || order_ship_address.state&.name,
-          :Country => order_ship_address.country.iso,
-          :PostalCode => order_ship_address.zipcode
+          :line1 => order_ship_address.address1,
+          :line2 => order_ship_address.address2,
+          :city => order_ship_address.city,
+          :region => order_ship_address.state_name.presence || order_ship_address.state&.name,
+          :country => order_ship_address.country.iso,
+          :postalCode => order_ship_address.zipcode
         }
 
         @logger.debug shipping_address
 
-        addresses << shipping_address
+        shipping_address
       end
     end
 
-    def origin_ship_addresses
-      stock_addresses = []
-      stock_location_ids = stock_location_ids_from_order(order)
+    def ship_from_address
+      package = Spree::Stock::Coordinator.new(@order).packages.find { |package| package.line_items.any? {|li| li.id == @line.id} }
+      stock_location = package.stock_location
 
-      Spree::StockLocation.where(id: stock_location_ids).each do |stock_location|
+      stock_location_address = {
+        :line1 => stock_location.address1,
+        :line2 => stock_location.address2,
+        :city => stock_location.city,
+        :postalCode => stock_location.zipcode,
+        :country => Spree::Country.find(stock_location.country_id).iso
+      }
 
-        stock_location_address = {
-          :AddressCode => "#{stock_location.id}",
-          :Line1 => stock_location.address1,
-          :Line2 => stock_location.address2,
-          :City => stock_location.city,
-          :PostalCode => stock_location.zipcode,
-          :Country => Spree::Country.find(stock_location.country_id).iso
-        }
+      @logger.debug stock_location_address
 
-        @logger.debug stock_location_address
-
-        stock_addresses << stock_location_address
-      end
-
-      addresses.concat(stock_addresses)
+      stock_location_address
     end
 
     def validate

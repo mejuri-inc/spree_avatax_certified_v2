@@ -4,7 +4,7 @@ gem_version = File.read(File.expand_path('GEM_VERSION', __dir__)).strip
 
 Gem::Specification.new do |s|
   s.platform    = Gem::Platform::RUBY
-  s.name        = 'spree_avatax_certified'
+  s.name        = 'spree_avatax_certified_v2'
   s.version     = gem_version
   s.summary     = 'Spree extension for Avalara tax calculation.'
   s.description = 'Spree extension for Avalara tax calculation.'
