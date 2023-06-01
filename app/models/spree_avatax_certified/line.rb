@@ -107,7 +107,7 @@ module SpreeAvataxCertified
     def return_item_line(line_item, quantity, amount)
       @logger.info("build return_line_item line: #{line_item.name}")
 
-      avatax_address = SpreeAvataxCertified::Address.new(o,o.line_items.first,@bill_address)
+      avatax_address = SpreeAvataxCertified::Address.new(@order,@order.line_items.first,@bill_address)
 
       line = {
         :number => "#{line_item.id}-LI",
@@ -118,7 +118,7 @@ module SpreeAvataxCertified
         :amount => -amount.to_f,
         :addresses => avatax_address.address,
         :entityUseCode => order.user ? order.user.avalara_entity_use_code.try(:use_code) : '',
-        :TaxIncluded => true
+        :taxIncluded => true
       }
 
       tax_override = {
