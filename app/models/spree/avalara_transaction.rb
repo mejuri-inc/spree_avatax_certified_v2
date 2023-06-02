@@ -97,7 +97,7 @@ module Spree
 
       AVALARA_TRANSACTION_LOGGER.info_and_debug('tax result', tax_result)
 
-      return { TotalTax: '0.00' } if tax_result == 'error in Tax'
+      return { totalTax: '0.00' } if tax_result == 'error in Tax'
 
       tax_result if tax_result['code'] == order.number
     end
