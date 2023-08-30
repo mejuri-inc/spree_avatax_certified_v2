@@ -74,30 +74,20 @@ module Spree
 
     def post_order_to_avalara(commit = false, invoice_detail = nil)
       AVALARA_TRANSACTION_LOGGER.info('post order to avalara')
-      avatax_address = SpreeAvataxCertified::Address.new(order)
-      avatax_line = SpreeAvataxCertified::Line.new(order, invoice_detail)
-
-      response = avatax_address.validate
-
-      unless response.nil?
-        if response['ResultCode'] == 'Success'
-          AVALARA_TRANSACTION_LOGGER.info('Address Validation Success')
-        else
-          AVALARA_TRANSACTION_LOGGER.info('Address Validation Failed')
-        end
-      end
+      avatax_line = SpreeAvataxCertified::Line.new(order, invoice_detail,bill_to_address)
 
       # Discount = General order discounts without line items discounts
       discount = order.adjustments.promotion.eligible.sum(:amount).abs
       discount = discount < 0 ? "0".to_s : discount.to_s
       gettaxes = {
-        DocCode: order.number,
-        Discount:  discount,
-        Commit: commit,
-        DocType: invoice_detail ? invoice_detail : 'SalesOrder',
-        Addresses: avatax_address.addresses,
-        Lines: avatax_line.lines
-      }.merge(base_tax_hash)
+          createTransactionModel:{
+          code: order.number,
+          totalDiscount:  discount,
+          commit: commit,
+          type: invoice_detail ? invoice_detail : 'SalesOrder',
+          lines: avatax_line.lines
+        }.merge(base_tax_hash)
+      }
 
       AVALARA_TRANSACTION_LOGGER.debug gettaxes
 
@@ -107,31 +97,32 @@ module Spree
 
       AVALARA_TRANSACTION_LOGGER.info_and_debug('tax result', tax_result)
 
-      return { TotalTax: '0.00' } if tax_result == 'error in Tax'
-      return tax_result if tax_result['ResultCode'] == 'Success'
+      return { totalTax: '0.00' } if tax_result == 'error in Tax'
+
+      tax_result if tax_result['code'] == order.number
     end
 
     def post_return_to_avalara(commit = false, invoice_detail = nil, return_auth = nil)
       AVALARA_TRANSACTION_LOGGER.info('starting post return order to avalara')
 
-      avatax_address = SpreeAvataxCertified::Address.new(order)
-      avatax_line = SpreeAvataxCertified::Line.new(order, invoice_detail, return_auth)
+      avatax_line = SpreeAvataxCertified::Line.new(order, invoice_detail, return_auth,bill_to_address)
 
       taxoverride = {
-        TaxOverrideType: 'None',
-        Reason: 'Return',
-        TaxDate: order.completed_at.strftime('%F')
+        type: 'None',
+        reason: 'Return',
+        taxDate: order.completed_at.strftime('%F')
       }
 
       gettaxes = {
-        DocCode: order.number.to_s + '.' + return_auth.id.to_s,
-        Commit: commit,
-        DocType: invoice_detail ? invoice_detail : 'ReturnOrder',
-        Addresses: avatax_address.addresses,
-        Lines: avatax_line.lines
-      }.merge(base_tax_hash)
-
-      gettaxes[:TaxOverride] = taxoverride
+        adjustmentReason: 'ProductReturned',
+        createTransactionModel:{
+          code: order.number.to_s + '.' + return_auth.id.to_s,
+          commit: commit,
+          type: invoice_detail ? invoice_detail : 'ReturnOrder',
+          lines: avatax_line.lines
+          }.merge(base_tax_hash)
+      }
+      gettaxes[:taxOverride] = taxoverride
 
       AVALARA_TRANSACTION_LOGGER.debug gettaxes
 
@@ -148,13 +139,12 @@ module Spree
     def base_tax_hash
       doc_date = order.completed? ? order.completed_at.strftime('%F') : Date.today.strftime('%F')
       {
-        CustomerCode: customer_code,
-        DocDate: doc_date,
-        CompanyCode: Spree::Config.avatax_company_code,
-        CustomerUsageType: customer_usage_type,
-        ExemptionNo: order.user.try(:exemption_number),
-        Client:  avatax_client_version,
-        ReferenceCode: order.number,
+        customerCode: customer_code,
+        date: doc_date,
+        companyCode: Spree::Config.avatax_company_code,
+        entityUseCode: customer_usage_type,
+        exemptionNo: order.user.try(:exemption_number),
+        referenceCode: order.number,
         DetailLevel: 'Tax'
       }
     end
@@ -177,6 +167,18 @@ module Spree
 
     def tax_calculation_enabled?
       Spree::Config.avatax_tax_calculation
+    end
+
+    def bill_to_address
+      origin = JSON.parse(Spree::Config.avatax_origin)
+      {
+        :line1 => origin['Address1'],
+        :line2 => origin['Address2'],
+        :city => origin['City'],
+        :region => origin['Region'],
+        :postalCode => origin['Zip5'],
+        :country => origin['Country']
+      }
     end
   end
 end
