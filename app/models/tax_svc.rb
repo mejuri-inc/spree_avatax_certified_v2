@@ -108,6 +108,8 @@ class TaxSvc # rubocop:disable Metrics/ClassLength
   end
 
   def service_url
+    return "https://rest.avatax.com" + AVATAX_SERVICEPATH_TAX if Rails.env.production?
+
     Spree::Config.avatax_endpoint + AVATAX_SERVICEPATH_TAX
   end
 
