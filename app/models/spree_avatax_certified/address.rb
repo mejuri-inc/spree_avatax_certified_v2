@@ -46,10 +46,7 @@ module SpreeAvataxCertified
 
     def ship_from_address
       stock_location = @line.stock_location
-      unless stock_location
-        package = Spree::Stock::Coordinator.new(@order).packages.find { |package| package.line_items.any? {|li| li.id == @line.id} }
-        stock_location = package.stock_location
-      end
+      resolve_stock_location if stock_location.blank?
 
       stock_location_address = {
         :line1 => stock_location.address1,
@@ -134,6 +131,11 @@ module SpreeAvataxCertified
 
     def account_number
       Spree::Config.avatax_account
+    end
+
+    def resolve_stock_location
+      package = Spree::Stock::Coordinator.new(@order).packages.find { |package| package.line_items.any? {|li| li.id == @line.id} }
+      package.stock_location
     end
   end
 end
