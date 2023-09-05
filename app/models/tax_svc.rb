@@ -54,10 +54,10 @@ class TaxSvc # rubocop:disable Metrics/ClassLength
     'error in Tax'
   end
 
-  def cancel_tax(request_hash)
+  def cancel_tax(cancel_uri, request_hash)
     if tax_calculation_enabled?
       log(__method__, request_hash)
-      res = response_v1('cancel', request_hash)
+      res = response(cancel_uri, request_hash)
       logger.debug res
       JSON.parse(res.body)['CancelTaxResult']
     end
