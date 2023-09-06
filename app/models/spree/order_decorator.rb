@@ -4,10 +4,6 @@ Spree::Order.class_eval do
 
   has_one :avalara_transaction, dependent: :destroy
 
- self.state_machine.before_transition :to => :canceled,
-                                      :do => :cancel_avalara,
-                                      :if => :avalara_eligible?
-
   def avalara_eligible?
     Spree::Config.avatax_iseligible
   end
