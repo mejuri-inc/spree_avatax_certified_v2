@@ -45,30 +45,27 @@ module Spree
     end
 
     def cancel_order
-      cancel_order_to_avalara('SalesInvoice')
+      cancel_order_to_avalara
     end
 
     private
 
-    def cancel_order_to_avalara(doc_type = 'SalesInvoice')
+    def cancel_order_to_avalara
       AVALARA_TRANSACTION_LOGGER.info('cancel order to avalara')
 
       cancel_tax_request = {
-        CompanyCode: Spree::Config.avatax_company_code,
-        DocType: doc_type,
-        DocCode: order.number,
-        CancelCode: 'DocVoided'
+        code: 'DocVoided'
       }
-
+      cancel_uri = "/companies/#{Spree::Config.avatax_company_code}/transactions/#{order.number}/void"
       mytax = TaxSvc.new
-      cancel_tax_result = mytax.cancel_tax(cancel_tax_request)
+      cancel_tax_result = mytax.cancel_tax(cancel_uri, cancel_tax_request)
 
       AVALARA_TRANSACTION_LOGGER.debug cancel_tax_result
 
-      if cancel_tax_result == 'error in Tax'
-        return 'Error in Tax'
+      if cancel_tax_result['status'] == 'Cancelled'
+        cancel_tax_result
       else
-        return cancel_tax_result
+        'Error in Tax'
       end
     end
 

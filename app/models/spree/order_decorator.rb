@@ -4,10 +4,6 @@ Spree::Order.class_eval do
 
   has_one :avalara_transaction, dependent: :destroy
 
- self.state_machine.before_transition :to => :canceled,
-                                      :do => :cancel_avalara,
-                                      :if => :avalara_eligible?
-
   def avalara_eligible?
     Spree::Config.avatax_iseligible
   end
@@ -33,7 +29,7 @@ Spree::Order.class_eval do
     create_avalara_transaction if avalara_transaction.nil?
     line_items.reload
     @rtn_tax = avalara_transaction.commit_avatax_final('SalesInvoice')
-    save_line_tax_breakdown @rtn_tax['TaxLines'] unless @rtn_tax['TaxLines'].nil?
+    save_line_tax_breakdown @rtn_tax['lines'] unless @rtn_tax['lines'].nil?
     logger.info_and_debug('tax amount', @rtn_tax)
     @rtn_tax
   end
@@ -46,12 +42,12 @@ Spree::Order.class_eval do
 
   def save_line_tax_breakdown tax_lines
     tax_lines.each do |tax_line|
-      line_item = Spree::LineItem.find(tax_line['LineNo'].sub('-LI', ''))
+      line_item = Spree::LineItem.find(tax_line['lineNumber'].sub('-LI', ''))
       next if line_item.nil?
       tax = line_item.adjustments.tax.first
       return if tax.nil?
 
-      tax.meta[:tax_breakdown] = tax_line['TaxDetails']
+      tax.meta[:tax_breakdown] = tax_line['details']
       tax.save
     end
   end
