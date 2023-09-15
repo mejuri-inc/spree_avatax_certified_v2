@@ -73,6 +73,12 @@ module Spree
       return prev_tax_amount if avalara_response.nil?
       return prev_tax_amount if avalara_response[:totalTax] == '0.00'
 
+      if avalara_response['lines'].blank?
+        message = "[Avatax] Error for Order ##{item.order.number}. Empty lines in avalara_response: #{avalara_response}"
+        Rails.logger.error message
+        return prev_tax_amount
+      end
+
       avalara_response['lines'].each do |line|
         if line['lineNumber'] == "#{item.id}-#{item.avatax_line_code}"
           return line['taxCalculated'].to_f
