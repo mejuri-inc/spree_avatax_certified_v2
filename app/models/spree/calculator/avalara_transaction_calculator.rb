@@ -39,7 +39,10 @@ module Spree
     end
 
     def get_avalara_response(order)
-      Rails.cache.fetch(cache_key(order), time_to_idle: 5.minutes) do
+      key = cache_key(order)
+      Rails.logger.info "[AVATAX] - Cache key for order #{order.number}: #{key}"
+      Rails.cache.fetch(key, time_to_idle: 5.minutes) do
+        Rails.logger.info "[AVATAX] - NO cache for key: #{key}"
         order.avalara_capture
       end
     end
