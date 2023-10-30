@@ -41,7 +41,7 @@ module Spree
     def get_avalara_response(order)
       key = cache_key(order)
       Rails.logger.info "[AVATAX] - Cache key for order #{order.number}: #{key}"
-      Rails.cache.fetch(key, time_to_idle: 5.minutes) do
+      Rails.cache.fetch(key, expires_in: 5.minutes) do
         Rails.logger.info "[AVATAX] - NO cache for key: #{key}"
         order.avalara_capture
       end
@@ -65,7 +65,7 @@ module Spree
     def cache_key_with_short_hash(order)
       long_key   = cache_key_without_short_hash(order)
       short_key  = Digest::SHA1.hexdigest(long_key)
-      "avtx_#{short_key}"
+      "avtx2_#{short_key}"
     end
 
     alias_method_chain :cache_key, :short_hash
