@@ -27,18 +27,18 @@ module SpreeAvataxCertified
     def ship_to_address
       unless order.ship_address.nil?
 
-        order_ship_address = order.pos? ? order.purchase_location.stock_location : order.ship_address
+        line_ship_address = resolve_item_ship_to_address
 
         shipping_address = {
-          :line1 => order_ship_address.address1,
-          :line2 => order_ship_address.address2,
-          :city => order_ship_address.city,
-          :region => order_ship_address.state_name.presence || order_ship_address.state&.name,
-          :country => order_ship_address.country.iso,
-          :postalCode => order_ship_address.zipcode
+          :line1 => line_ship_address.address1,
+          :line2 => line_ship_address.address2,
+          :city => line_ship_address.city,
+          :region => line_ship_address.state_name.presence || line_ship_address.state&.name,
+          :country => line_ship_address.country.iso,
+          :postalCode => line_ship_address.zipcode
         }
 
-        @logger.debug shipping_address
+        @logger.debug "[AVATAX] - Resolved line ship_to_address: #{shipping_address}"
 
         shipping_address
       end
@@ -136,6 +136,13 @@ module SpreeAvataxCertified
     def resolve_stock_location
       package = Spree::Stock::Coordinator.new(@order).packages.find { |package| package.line_items.any? {|li| li.id == @line.id} }
       package.stock_location
+    end
+
+    def resolve_item_ship_to_address
+      shipment = @order.shipments.select { |s| s.line_items.include?(@line) }
+      return shipment.address if shipment.present?
+
+      order.pos? ? order.purchase_location.stock_location : order.ship_address
     end
   end
 end
