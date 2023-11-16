@@ -140,7 +140,7 @@ module SpreeAvataxCertified
 
     def resolve_item_ship_to_address
       shipment = @order.shipments.select { |s| s.line_items.include?(@line) }
-      return shipment.address if shipment.present?
+      return shipment.first.address unless shipment.blank?
 
       order.pos? ? order.purchase_location.stock_location : order.ship_address
     end
