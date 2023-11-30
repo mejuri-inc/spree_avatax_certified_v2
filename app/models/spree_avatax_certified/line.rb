@@ -107,7 +107,7 @@ module SpreeAvataxCertified
     def return_item_line(line_item, quantity, amount)
       @logger.info("build return_line_item line: #{line_item.name}")
 
-      avatax_address = SpreeAvataxCertified::Address.new(@order,@order.line_items.first,@bill_address)
+      avatax_address = SpreeAvataxCertified::Address.new(@order,line_item,@bill_address)
 
       line = {
         :number => "#{line_item.id}-LI",
