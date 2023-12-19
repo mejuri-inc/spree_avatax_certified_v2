@@ -140,6 +140,7 @@ module Spree
         date: doc_date,
         companyCode: Spree::Config.avatax_company_code,
         reportingLocationCode: resolve_location_code,
+        currencyCode: order.currency,
         entityUseCode: customer_usage_type,
         exemptionNo: order.user.try(:exemption_number),
         referenceCode: order.number,
