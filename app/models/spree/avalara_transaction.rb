@@ -139,6 +139,8 @@ module Spree
         customerCode: customer_code,
         date: doc_date,
         companyCode: Spree::Config.avatax_company_code,
+        reportingLocationCode: resolve_location_code,
+        currencyCode: order.currency,
         entityUseCode: customer_usage_type,
         exemptionNo: order.user.try(:exemption_number),
         referenceCode: order.number,
@@ -164,6 +166,11 @@ module Spree
 
     def tax_calculation_enabled?
       Spree::Config.avatax_tax_calculation
+    end
+
+    def resolve_location_code
+      default_stock_location = Spree::StockLocation.find_by name: 'Mejuri'
+      order.purchase_location.stock_location.avalara_location_code || default_stock_location.avalara_location_code
     end
 
     def bill_to_address
